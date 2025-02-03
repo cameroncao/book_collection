@@ -1,80 +1,51 @@
 env:
-
-RUBY_VERSION: 3.0.2
-
-POSTGRES_USER: postgres
-
-POSTGRES_PASSWORD: password
-
-DATABASE_USER: postgres
-
-DATABASE_PASSWORD: password
-
+  RUBY_VERSION: 3.0.2
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+  DATABASE_USER: postgres
+  DATABASE_PASSWORD: password
 
 name: Rails tests
 
 on: [push, pull_request]
 
 jobs:
+  rspec-test:
+    name: RSpec
+    runs-on: ubuntu-latest
 
-rspec-test:
+    services:
+      postgres:
+        image: postgres:12
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
 
-name: RSpec
+    steps:
+      - uses: actions/checkout@v2
 
-runs-on: ubuntu-latest
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
 
-services:
+      - name: Install postgres client
+        run: sudo apt-get install libpq-dev
 
-postgres:
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundler install
 
-image: postgres:12
+      - name: Create database
+        run: |
+          bundler exec rails db:create RAILS_ENV=test
+          bundler exec rails db:migrate RAILS_ENV=test
 
-ports:
+      - uses: borales/actions-yarn@v3.0.0
+        with:
+          cmd: install
 
-- 5432:5432
-
-env:
-
-POSTGRES_USER: ${{ env.POSTGRES_USER }}
-
-POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-
-steps:
-
-- uses: actions/checkout@v2
-
-- uses: ruby/setup-ruby@v1
-
-with:
-
-ruby-version: ${{ env.RUBY_VERSION }}
-
-- name: Install postgres client
-
-run: sudo apt-get install libpq-dev
-
-- name: Install dependencies
-
-run: |
-
-gem install bundler
-
-bundler install
-
-- name: Create database
-
-run: |
-
-bundler exec rails db:create RAILS_ENV=test
-
-bundler exec rails db:migrate RAILS_ENV=test
-
-- uses: borales/actions-yarn@v3.0.0
-
-with:
-
-cmd: install
-
-- name: Run tests
-
-run: bundler exec rspec .
+      - name: Run tests
+        run: bundler exec rspec .
