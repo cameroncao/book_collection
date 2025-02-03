@@ -56,3 +56,5 @@ end
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 gem 'yaml_db'
 
+
+gem "rspec-rails", "~> 6.1"
